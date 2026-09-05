@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🧬 ProjectDNA
 
@@ -368,4 +368,4 @@ This project is part of the **Clerk + Neon Hackathon** submission.
 [⭐ Star this repo](https://github.com/ChaitanyaKewale/ProjectDNA) if you found it interesting!
 
 </div>
-]]>
+
