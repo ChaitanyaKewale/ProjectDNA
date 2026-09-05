@@ -12,6 +12,11 @@ export async function getUserById(id: string): Promise<User | undefined> {
   return result[0];
 }
 
+export async function getUserByUsername(username: string): Promise<User | undefined> {
+  const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+  return result[0];
+}
+
 export async function upsertUser(userData: NewUser): Promise<User> {
   const existing = await getUserByClerkId(userData.clerkId);
   if (existing) {
