@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export default function ExtensionErrorFilter() {
   useEffect(() => {
-    // Intercept console.error to swallow hydration mismatch warnings caused by browser extension attribute injections (e.g. bis_skin_checked)
+    // Intercept console.error to swallow hydration mismatch warnings and third-party extension errors
     const originalConsoleError = console.error;
     console.error = (...args: any[]) => {
       const msg = args.map((a) => (typeof a === 'string' ? a : a?.message || JSON.stringify(a) || '')).join(' ');
@@ -14,7 +14,9 @@ export default function ExtensionErrorFilter() {
         msg.includes('Hydration failed') ||
         msg.includes("didn't match") ||
         msg.includes('Text content does not match') ||
-        msg.includes('Hydration')
+        msg.includes('Hydration') ||
+        msg.includes('startTime') ||
+        msg.includes('reportAllChanges')
       ) {
         return;
       }
@@ -25,9 +27,12 @@ export default function ExtensionErrorFilter() {
       if (
         event.filename?.includes('chrome-extension://') ||
         event.error?.stack?.includes('chrome-extension://') ||
+        event.error?.stack?.includes('reportAllChanges') ||
         event.message?.includes('M_ID') ||
         event.message?.includes('bis_skin_checked') ||
-        event.message?.includes('Hydration')
+        event.message?.includes('Hydration') ||
+        event.message?.includes('startTime') ||
+        event.message?.includes('reportAllChanges')
       ) {
         event.stopImmediatePropagation();
         event.preventDefault();
@@ -37,9 +42,12 @@ export default function ExtensionErrorFilter() {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       if (
         event.reason?.stack?.includes('chrome-extension://') ||
+        event.reason?.stack?.includes('reportAllChanges') ||
         event.reason?.message?.includes('M_ID') ||
         event.reason?.message?.includes('bis_skin_checked') ||
-        event.reason?.message?.includes('Hydration')
+        event.reason?.message?.includes('Hydration') ||
+        event.reason?.message?.includes('startTime') ||
+        event.reason?.message?.includes('reportAllChanges')
       ) {
         event.stopImmediatePropagation();
         event.preventDefault();
