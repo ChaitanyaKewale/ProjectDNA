@@ -239,17 +239,17 @@
 
 ---
 
-## Phase 11 — Team Workspace (Private)
+## Phase 11 — Team Workspace (Private) ✅ (Complete)
 > **Goal**: Private project workspace, access-controlled by membership.
 
-- [ ] `lib/auth/workspace-guard.ts` — check `project_members` for current user
-- [ ] `app/workspace/[projectId]/layout.tsx` — sidebar nav shell
-- [ ] `app/workspace/[projectId]/page.tsx` — **Overview** (stats, activity)
-- [ ] `app/workspace/[projectId]/team/page.tsx` — **Team** (members, roles, admin controls)
-- [ ] `app/workspace/[projectId]/dna/page.tsx` — **DNA** (editable by Admin)
-- [ ] `app/workspace/[projectId]/tasks/page.tsx` — **Tasks** (Kanban: To Do / In Progress / Done)
-- [ ] `app/workspace/[projectId]/progress/page.tsx` — **Progress** (milestones, completion %)
-- [ ] `app/workspace/[projectId]/resources/page.tsx` — **Resources** (links, GitHub, docs)
+- [x] `lib/auth/workspace-guard.ts` — check `project_members` for current user
+- [x] `app/workspace/[projectId]/layout.tsx` — sidebar nav shell
+- [x] `app/workspace/[projectId]/page.tsx` — **Overview** (stats, activity)
+- [x] `app/workspace/[projectId]/team/page.tsx` — **Team** (members, roles, admin controls)
+- [x] `app/workspace/[projectId]/dna/page.tsx` — **DNA** (editable by Admin)
+- [x] `app/workspace/[projectId]/tasks/page.tsx` — **Tasks** (Kanban: To Do / In Progress / Done)
+- [x] `app/workspace/[projectId]/progress/page.tsx` — **Progress** (milestones, completion %)
+- [x] `app/workspace/[projectId]/resources/page.tsx` — **Resources** (links, GitHub, docs)
 
 **Done when**: Workspace loads for members only; tasks and team management work.
 
