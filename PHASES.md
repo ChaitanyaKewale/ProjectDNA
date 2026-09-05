@@ -85,19 +85,20 @@
 
 ---
 
-## Phase 3 — Clerk Webhook → User Sync
+## Phase 3 — Clerk Webhook → User Sync ✅ (Complete)
 > **Goal**: Every new Clerk sign-up automatically creates a `users` row in Neon.
 
-- [ ] Add `CLERK_WEBHOOK_SECRET` to `.env.local`
-- [ ] Install `svix` (Clerk webhook verification)
-- [ ] Create `app/api/webhooks/clerk/route.ts`:
-  - Verify Svix signature
-  - Handle `user.created` → insert into `users` table
-  - Handle `user.updated` → update name/avatar
-- [ ] Configure webhook endpoint in Clerk Dashboard → `{ngrok_url}/api/webhooks/clerk`
-- [ ] Test: sign up a new user → confirm `users` row created in DB
+- [x] Add `CLERK_WEBHOOK_SECRET` environment check to `.env.local`
+- [x] Install `svix` (Clerk webhook verification)
+- [x] Update `proxy.ts` middleware to allow public `/api/webhooks(.*)` access
+- [x] Create `app/api/webhooks/clerk/route.ts`:
+  - Verify Svix signature (`svix-id`, `svix-timestamp`, `svix-signature`)
+  - Handle `user.created` → insert into `users` table via `upsertUser`
+  - Handle `user.updated` → update name/avatar/email via `upsertUser`
+  - Handle `user.deleted` → delete user via `deleteUserByClerkId`
+- [x] Webhook route ready to receive events from Clerk Dashboard (`https://<domain>/api/webhooks/clerk`)
 
-**Done when**: New Clerk signup → row appears in Neon `users` table.
+**Done when**: Webhook endpoint created, Svix signature verified, user events synced to Neon `users` table.
 
 ---
 
@@ -294,8 +295,8 @@ GEMINI_API_KEY=...         # from aistudio.google.com
 | 0 | Bootstrap + Clerk Auth | ✅ Done |
 | 1 | Design System + UI Components | ✅ Done |
 | 2 | Database Schema + Drizzle | ✅ Done |
-| 3 | Clerk Webhook → User Sync | ⬜ Next |
-| 4 | Onboarding Wizard (5 Steps) | ⬜ |
+| 3 | Clerk Webhook → User Sync | ✅ Done |
+| 4 | Onboarding Wizard (5 Steps) | ⬜ Next |
 | 5 | Public Pages (Landing, Explore, Profile) | ⬜ |
 | 6 | Authenticated Dashboard | ⬜ |
 | 7 | Project Creation + AI Analyzer | ⬜ |

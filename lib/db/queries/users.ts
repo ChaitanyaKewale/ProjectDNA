@@ -35,3 +35,8 @@ export async function upsertUser(userData: NewUser): Promise<User> {
 export async function completeUserOnboarding(userId: string): Promise<void> {
   await db.update(users).set({ onboardingComplete: true }).where(eq(users.id, userId));
 }
+
+export async function deleteUserByClerkId(clerkId: string): Promise<void> {
+  await db.delete(users).where(eq(users.clerkId, clerkId));
+}
+
