@@ -152,8 +152,26 @@ export default function InvitationsPage() {
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [userProjects, setUserProjects] = useState<{ id: string; name: string }[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('demo-1');
   const [sendingDirect, setSendingDirect] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
+
+  useEffect(() => {
+    async function loadUserProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        if (data.success && data.projects && data.projects.length > 0) {
+          setUserProjects(data.projects.map((p: any) => ({ id: p.id, name: p.name })));
+          setSelectedProjectId(data.projects[0].id);
+        }
+      } catch (e) {
+        console.warn('Could not load projects:', e);
+      }
+    }
+    loadUserProjects();
+  }, []);
 
   const handleDirectInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +182,7 @@ export default function InvitationsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId: 'demo-1',
+          projectId: selectedProjectId || 'demo-1',
           toEmail: inviteEmail.trim(),
           message: 'Invitation to collaborate on project team on ProjectDNA.',
         }),
@@ -233,7 +251,27 @@ export default function InvitationsPage() {
             {sendSuccess && <span style={{ color: '#10b981', fontWeight: 600, fontSize: '0.875rem' }}>Invitation Sent Successfully ✓</span>}
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+            {userProjects.length > 0 && (
+              <select
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                style={{
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  padding: '0.75rem 1rem',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#fff',
+                }}
+              >
+                {userProjects.map((p) => (
+                  <option key={p.id} value={p.id} style={{ background: '#0f172a' }}>
+                    Project: {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
             <input
               type="email"
               placeholder="Enter developer's email address (e.g. developer@example.com)..."
@@ -241,6 +279,7 @@ export default function InvitationsPage() {
               onChange={(e) => setInviteEmail(e.target.value)}
               style={{
                 flex: 1,
+                minWidth: '240px',
                 background: 'rgba(0, 0, 0, 0.3)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 padding: '0.75rem 1rem',

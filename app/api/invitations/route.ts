@@ -96,12 +96,30 @@ export async function GET(req: Request) {
     }
 
     const dbUser = await getOrSyncUser(clerkId);
-    const userIds = [dbUser?.id, clerkId].filter(Boolean) as string[];
+    const clerkUser = await currentUser();
+    const primaryEmail = clerkUser?.emailAddresses[0]?.emailAddress;
+
+    const userIds = Array.from(
+      new Set(
+        [
+          dbUser?.id,
+          clerkId,
+          dbUser?.email,
+          dbUser?.email?.toLowerCase(),
+          primaryEmail,
+          primaryEmail?.toLowerCase(),
+        ].filter(Boolean) as string[]
+      )
+    );
 
     const allInvites = await getDetailedUserInvitations(userIds);
 
-    const received = allInvites.filter((inv) => userIds.includes(inv.toUserId));
-    const sent = allInvites.filter((inv) => userIds.includes(inv.fromUserId));
+    const received = allInvites.filter((inv) =>
+      userIds.some((id) => id.toLowerCase() === inv.toUserId?.toLowerCase())
+    );
+    const sent = allInvites.filter((inv) =>
+      userIds.some((id) => id.toLowerCase() === inv.fromUserId?.toLowerCase())
+    );
 
     return NextResponse.json({
       success: true,

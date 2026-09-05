@@ -1,6 +1,11 @@
 import React from 'react';
+import Link from 'next/link';
 import styles from '../workspace.module.css';
 import Button from '@/components/ui/Button';
+import { getProjectMembers } from '@/lib/db/queries/members';
+import { getUserById, getUserByClerkId } from '@/lib/db/queries/users';
+import { getProjectById, getProjectBySlug } from '@/lib/db/queries/projects';
+import { auth, currentUser } from '@clerk/nextjs/server';
 
 interface TeamMemberItem {
   id: string;
@@ -12,65 +17,82 @@ interface TeamMemberItem {
   hoursPerWeek: number;
 }
 
-const MEMBERS: TeamMemberItem[] = [
-  {
-    id: 'm-1',
-    name: 'Chaitanya Kewale',
-    role: 'Lead Architect & Owner',
-    teamRole: 'Admin',
-    skills: ['TypeScript', 'Next.js 16', 'Neon DB', 'Gemini AI'],
-    joinedAt: 'Project Creator',
-    hoursPerWeek: 30,
-  },
-  {
-    id: 'm-2',
-    name: 'Elena Rostova',
-    role: 'AI / ML Architect',
-    teamRole: 'Member',
-    skills: ['Gemini API', 'Python', 'LLM Prompts', 'PyTorch'],
-    joinedAt: 'Joined 2 hours ago',
-    hoursPerWeek: 20,
-  },
-  {
-    id: 'm-3',
-    name: 'Marcus Vance',
-    role: 'Fullstack Next.js Specialist',
-    teamRole: 'Member',
-    skills: ['TypeScript', 'Next.js', 'React', 'Drizzle ORM'],
-    joinedAt: 'Joined 2 days ago',
-    hoursPerWeek: 15,
-  },
-  {
-    id: 'm-4',
-    name: 'Aisha Patel',
-    role: 'Backend & Systems Engineer',
-    teamRole: 'Member',
-    skills: ['Node.js', 'PostgreSQL', 'Docker', 'Go'],
-    joinedAt: 'Joined 3 days ago',
-    hoursPerWeek: 10,
-  },
-];
-
 export default async function WorkspaceTeamPage({
   params,
 }: {
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
+  const { userId: clerkId } = await auth();
+
+  let project = await getProjectById(projectId);
+  if (!project) {
+    project = await getProjectBySlug(projectId);
+  }
+
+  const dbMembers = project ? await getProjectMembers(project.id) : [];
+
+  let realMembersList: TeamMemberItem[] = [];
+
+  for (const m of dbMembers) {
+    const userRes = await getUserById(m.userId);
+    if (userRes) {
+      realMembersList.push({
+        id: m.id,
+        name: userRes.name || 'Developer',
+        role: m.role === 'admin' ? 'Project Owner & Lead' : 'Team Member',
+        teamRole: m.role === 'admin' ? 'Admin' : 'Member',
+        skills: ['TypeScript', 'React', 'Next.js'],
+        joinedAt: m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : 'Joined',
+        hoursPerWeek: m.role === 'admin' ? 30 : 20,
+      });
+    }
+  }
+
+  // If DB returned no members, show currently authenticated user as Admin Owner
+  if (realMembersList.length === 0 && clerkId) {
+    const clerkUser = await currentUser();
+    const dbUser = await getUserByClerkId(clerkId);
+    const ownerName = dbUser?.name || clerkUser?.fullName || 'Project Owner';
+    realMembersList.push({
+      id: 'owner-1',
+      name: ownerName,
+      role: 'Project Owner & Lead Architect',
+      teamRole: 'Admin',
+      skills: ['TypeScript', 'Next.js 16', 'Neon DB', 'Gemini AI'],
+      joinedAt: 'Project Creator',
+      hoursPerWeek: 30,
+    });
+  }
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>
-          Team Roster & Administration
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9375rem' }}>
-          Active project collaborators, RBAC roles, and capacity allocations.
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>
+            Team Roster & Administration
+          </h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9375rem' }}>
+            Active project collaborators, RBAC roles, and capacity allocations.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Link href={`/project/${projectId}/match`}>
+            <Button variant="primary">
+              + Find & Match Candidates ✨
+            </Button>
+          </Link>
+          <Link href="/invitations">
+            <Button variant="outline">
+              ✉️ Send Invitations
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <div className={styles.grid2}>
-        {MEMBERS.map((member) => (
+      <div className={styles.grid2} style={{ marginBottom: '2rem' }}>
+        {realMembersList.map((member) => (
           <div key={member.id} className={styles.card} style={{ marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', gap: '0.875rem' }}>
@@ -116,6 +138,31 @@ export default async function WorkspaceTeamPage({
           </div>
         ))}
       </div>
+
+      {/* Empty State Banner if team needs more members */}
+      {realMembersList.length <= 1 && (
+        <div className={styles.card} style={{ textAlign: 'center', padding: '3rem 2rem', border: '1px dashed rgba(255, 255, 255, 0.15)' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>👥</div>
+          <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>
+            Build Your Project Team
+          </h3>
+          <p style={{ color: 'var(--color-text-muted)', maxWidth: '500px', margin: '0 auto 1.5rem auto', fontSize: '0.9375rem' }}>
+            You are currently the sole team member. Use AI Candidate Matching or send direct email invitations to recruit developers into your workspace team.
+          </p>
+          <div style={{ display: 'inline-flex', gap: '1rem' }}>
+            <Link href={`/project/${projectId}/match`}>
+              <Button variant="primary">
+                Find Candidates ✨
+              </Button>
+            </Link>
+            <Link href="/invitations">
+              <Button variant="outline">
+                Send Direct Email Invite ✉️
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
