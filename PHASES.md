@@ -150,17 +150,17 @@
 
 ---
 
-## Phase 6 — Authenticated Dashboard
+## Phase 6 — Authenticated Dashboard ✅ (Complete)
 > **Goal**: Central hub after login — shows all user activity.
 
-- [ ] Protect `/dashboard` with `auth.protect()`
-- [ ] `app/dashboard/page.tsx` — 4 sections:
-  - **My Projects** — cards with status, team fill, "Manage" button
-  - **My Teams** — projects where user is a member
-  - **Pending Invitations** — count badge + quick accept/reject
-  - **Recommended Projects** — top 3 matching user profile
-- [ ] Empty states for all sections
-- [ ] Quick-action sidebar: Create Project, Find Projects, Edit Profile
+- [x] Protect `/dashboard` with `await auth.protect()`
+- [x] `app/dashboard/page.tsx` — 4 sections:
+  - **My Projects** — cards with status, team fill, "Manage Workspace" button
+  - **My Teams** — projects where user is a team member
+  - **Pending Invitations** — count badge + match score cards with accept/reject buttons
+  - **Recommended Projects** — top matching public projects feed
+- [x] Empty states for all sections
+- [x] Quick-action sidebar: Create Project, Find Projects, Edit DNA Profile, Public Profile
 
 **Done when**: Dashboard loads with real data, all sections functional.
 
@@ -297,8 +297,8 @@ GEMINI_API_KEY=...         # from aistudio.google.com
 | 3 | Clerk Webhook → User Sync | ✅ Done |
 | 4 | Onboarding Wizard (5 Steps) | ✅ Done |
 | 5 | Public Pages (Landing, Explore, Profile) | ✅ Done |
-| 6 | Authenticated Dashboard | ⬜ Next |
-| 7 | Project Creation + AI Analyzer | ⬜ |
+| 6 | Authenticated Dashboard | ✅ Done |
+| 7 | Project Creation + AI Analyzer | ⬜ Next |
 | 8 | Project DNA Dashboard | ⬜ |
 | 9 | Smart Matching System | ⬜ |
 | 10 | Invitations | ⬜ |
