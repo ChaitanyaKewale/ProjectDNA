@@ -1,5 +1,5 @@
 import { db } from '../index';
-import { projectMembers, NewProjectMember, ProjectMember } from '../schema';
+import { projectMembers, users, NewProjectMember, ProjectMember } from '../schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function addMember(memberData: NewProjectMember): Promise<ProjectMember> {
@@ -14,17 +14,31 @@ export async function addMember(memberData: NewProjectMember): Promise<ProjectMe
   }
 
   try {
+    console.log('[Members] Adding member - projectId:', memberData.projectId, 'userId:', memberData.userId, 'role:', memberData.role);
+
+    // Check if already a member (prevent duplicate insert errors)
+    const existing = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.projectId, memberData.projectId),
+          eq(projectMembers.userId, memberData.userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      console.log('[Members] User already a member of this project, skipping insert');
+      return existing[0];
+    }
+
     const [inserted] = await db.insert(projectMembers).values(memberData).returning();
+    console.log('[Members] Successfully added member:', inserted.id);
     return inserted;
   } catch (error) {
-    console.warn('[DB Notice]: Could not add member:', error);
-    return {
-      id: 'mock-member-id',
-      projectId: memberData.projectId,
-      userId: memberData.userId,
-      role: memberData.role || 'member',
-      joinedAt: new Date(),
-    };
+    console.error('[Members] FAILED to add member:', error);
+    throw error; // Re-throw so we know what happened
   }
 }
 

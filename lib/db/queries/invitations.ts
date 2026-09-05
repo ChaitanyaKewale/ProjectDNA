@@ -2,6 +2,9 @@ import { db } from '../index';
 import { invitations, projects, users, NewInvitation, Invitation } from '../schema';
 import { eq, or, desc, inArray } from 'drizzle-orm';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isUUID = (s: string) => UUID_RE.test(s);
+
 export interface DetailedInvitation extends Invitation {
   projectTitle?: string;
   projectCategory?: string;
@@ -27,19 +30,11 @@ export async function createInvitation(inviteData: NewInvitation): Promise<Invit
 
   try {
     const [inserted] = await db.insert(invitations).values(inviteData).returning();
+    console.log('[Invitations] Created invitation:', inserted.id, 'from:', inserted.fromUserId, 'to:', inserted.toUserId);
     return inserted;
   } catch (error) {
-    console.warn('[DB Notice]: Could not create invitation:', error);
-    return {
-      id: 'mock-invite-id',
-      fromUserId: inviteData.fromUserId,
-      toUserId: inviteData.toUserId,
-      projectId: inviteData.projectId,
-      status: inviteData.status || 'pending',
-      matchScore: inviteData.matchScore || 90,
-      message: inviteData.message || 'Invitation',
-      createdAt: new Date(),
-    };
+    console.error('[Invitations] FAILED to create invitation:', error);
+    throw error; // Re-throw so the API handler knows it failed
   }
 }
 
@@ -57,17 +52,52 @@ export async function getUserInvitations(userId: string): Promise<Invitation[]> 
   }
 }
 
+/**
+ * Fetches detailed invitations for a user.
+ * Accepts an array of identifiers — UUIDs, Clerk IDs, or emails.
+ * Only valid UUIDs are used in direct column queries.
+ * Non-UUID identifiers (emails) are resolved to UUIDs first via the users table.
+ */
 export async function getDetailedUserInvitations(userIdOrIds: string | string[]): Promise<DetailedInvitation[]> {
   if (!process.env.DATABASE_URL) return [];
-  const ids = Array.isArray(userIdOrIds) ? userIdOrIds.filter(Boolean) : [userIdOrIds].filter(Boolean);
-  if (ids.length === 0) return [];
+  const rawIds = Array.isArray(userIdOrIds) ? userIdOrIds.filter(Boolean) : [userIdOrIds].filter(Boolean);
+  if (rawIds.length === 0) return [];
 
   try {
+    // Separate UUIDs from non-UUID identifiers (emails, clerk IDs)
+    const uuidIds = rawIds.filter(isUUID);
+    const nonUuidIds = rawIds.filter(id => !isUUID(id));
+
+    // Resolve non-UUID identifiers to DB UUIDs via users table lookup
+    if (nonUuidIds.length > 0) {
+      const allUsers = await db.select().from(users);
+      for (const identifier of nonUuidIds) {
+        const lowerIdentifier = identifier.toLowerCase();
+        const matched = allUsers.find(
+          u => u.email?.toLowerCase() === lowerIdentifier ||
+               u.clerkId?.toLowerCase() === lowerIdentifier ||
+               u.username?.toLowerCase() === lowerIdentifier
+        );
+        if (matched && !uuidIds.includes(matched.id)) {
+          uuidIds.push(matched.id);
+        }
+      }
+    }
+
+    if (uuidIds.length === 0) {
+      console.log('[Invitations] No valid UUID identifiers resolved, returning empty');
+      return [];
+    }
+
+    console.log('[Invitations] Querying invitations for UUIDs:', uuidIds);
+
     const rawInvites = await db
       .select()
       .from(invitations)
-      .where(or(inArray(invitations.toUserId, ids), inArray(invitations.fromUserId, ids)))
+      .where(or(inArray(invitations.toUserId, uuidIds), inArray(invitations.fromUserId, uuidIds)))
       .orderBy(desc(invitations.createdAt));
+
+    console.log('[Invitations] Found', rawInvites.length, 'invitations');
 
     const detailedList: DetailedInvitation[] = [];
 
@@ -75,7 +105,7 @@ export async function getDetailedUserInvitations(userIdOrIds: string | string[])
       // Fetch project details
       let projTitle = 'Project Collaboration';
       let projCat = 'Developer Tools';
-      if (inv.projectId) {
+      if (inv.projectId && isUUID(inv.projectId)) {
         const projRes = await db.select().from(projects).where(eq(projects.id, inv.projectId)).limit(1);
         if (projRes[0]) {
           projTitle = projRes[0].name;
@@ -86,8 +116,8 @@ export async function getDetailedUserInvitations(userIdOrIds: string | string[])
       // Fetch sender details
       let senderName = 'Developer';
       let senderAvatar: string | null = null;
-      if (inv.fromUserId) {
-        const senderRes = await db.select().from(users).where(or(eq(users.id, inv.fromUserId), eq(users.clerkId, inv.fromUserId))).limit(1);
+      if (inv.fromUserId && isUUID(inv.fromUserId)) {
+        const senderRes = await db.select().from(users).where(eq(users.id, inv.fromUserId)).limit(1);
         if (senderRes[0]) {
           senderName = senderRes[0].name || 'Developer';
           senderAvatar = senderRes[0].avatarUrl;
@@ -97,8 +127,8 @@ export async function getDetailedUserInvitations(userIdOrIds: string | string[])
       // Fetch recipient details
       let recipientName = 'Candidate';
       let recipientAvatar: string | null = null;
-      if (inv.toUserId) {
-        const recipientRes = await db.select().from(users).where(or(eq(users.id, inv.toUserId), eq(users.clerkId, inv.toUserId))).limit(1);
+      if (inv.toUserId && isUUID(inv.toUserId)) {
+        const recipientRes = await db.select().from(users).where(eq(users.id, inv.toUserId)).limit(1);
         if (recipientRes[0]) {
           recipientName = recipientRes[0].name || 'Candidate';
           recipientAvatar = recipientRes[0].avatarUrl;
@@ -118,7 +148,7 @@ export async function getDetailedUserInvitations(userIdOrIds: string | string[])
 
     return detailedList;
   } catch (error) {
-    console.warn('[DB Notice]: Could not get detailed invitations:', error);
+    console.error('[Invitations] Error in getDetailedUserInvitations:', error);
     return [];
   }
 }
@@ -143,18 +173,9 @@ export async function updateInvitationStatus(
 ): Promise<Invitation | undefined> {
   if (!process.env.DATABASE_URL) return undefined;
 
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-  if (!isUUID) {
-    return {
-      id,
-      fromUserId: 'mock-from',
-      toUserId: 'mock-to',
-      projectId: 'demo-1',
-      status,
-      matchScore: 90,
-      message: 'Invitation',
-      createdAt: new Date(),
-    };
+  if (!isUUID(id)) {
+    console.error('[Invitations] updateInvitationStatus called with non-UUID id:', id);
+    return undefined;
   }
 
   try {
@@ -163,9 +184,15 @@ export async function updateInvitationStatus(
       .set({ status })
       .where(eq(invitations.id, id))
       .returning();
+    
+    if (updated) {
+      console.log('[Invitations] Updated invitation', id, 'to status:', status, 'projectId:', updated.projectId);
+    } else {
+      console.warn('[Invitations] No invitation found with id:', id);
+    }
     return updated;
   } catch (error) {
-    console.warn('[DB Notice]: Could not update invitation status:', error);
+    console.error('[Invitations] Failed to update invitation status:', error);
     return undefined;
   }
 }

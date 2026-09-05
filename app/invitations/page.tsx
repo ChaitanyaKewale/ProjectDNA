@@ -19,63 +19,11 @@ interface InvitationItem {
   createdAt: string;
 }
 
-const FALLBACK_RECEIVED: InvitationItem[] = [
-  {
-    id: 'inv-rec-1',
-    projectId: 'demo-1',
-    projectTitle: 'AI Developer Matching Platform',
-    projectCategory: 'Developer Tools & AI',
-    senderName: 'Chaitanya Kewale (Project Owner)',
-    status: 'pending',
-    matchScore: 96,
-    message: 'Hey! Your profile on ProjectDNA matches our AI ML Architect requirements with a 96% score. We would love to have you join our project team!',
-    createdAt: '2 hours ago',
-  },
-  {
-    id: 'inv-rec-2',
-    projectId: 'demo-2',
-    projectTitle: 'DeFi Liquidity Aggregator',
-    projectCategory: 'Blockchain / Fintech',
-    senderName: 'Alex Morgan',
-    status: 'pending',
-    matchScore: 88,
-    message: 'Looking for a Senior Systems & Backend Specialist with PostgreSQL & Node.js expertise to help architect our high-throughput DEX liquidity engine.',
-    createdAt: '1 day ago',
-  },
-];
-
-const FALLBACK_SENT: InvitationItem[] = [
-  {
-    id: 'inv-sent-1',
-    projectId: 'demo-1',
-    projectTitle: 'AI Developer Matching Platform',
-    projectCategory: 'Developer Tools & AI',
-    senderName: 'You',
-    recipientName: 'Elena Rostova (AI ML Architect)',
-    status: 'pending',
-    matchScore: 96,
-    message: 'Invitation to collaborate as AI / ML Architect.',
-    createdAt: '3 hours ago',
-  },
-  {
-    id: 'inv-sent-2',
-    projectId: 'demo-1',
-    projectTitle: 'AI Developer Matching Platform',
-    projectCategory: 'Developer Tools & AI',
-    senderName: 'You',
-    recipientName: 'Marcus Vance (Fullstack Next.js Specialist)',
-    status: 'accepted',
-    matchScore: 91,
-    message: 'Invitation to collaborate as Fullstack Next.js Specialist.',
-    createdAt: '2 days ago',
-  },
-];
-
 export default function InvitationsPage() {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
-  const [receivedList, setReceivedList] = useState<InvitationItem[]>(FALLBACK_RECEIVED);
-  const [sentList, setSentList] = useState<InvitationItem[]>(FALLBACK_SENT);
-  const [loading, setLoading] = useState(false);
+  const [receivedList, setReceivedList] = useState<InvitationItem[]>([]);
+  const [sentList, setSentList] = useState<InvitationItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -133,18 +81,27 @@ export default function InvitationsPage() {
   const handleRespond = async (id: string, action: 'accepted' | 'rejected') => {
     setActionLoading((prev) => ({ ...prev, [id]: true }));
     try {
-      await fetch(`/api/invitations/${id}`, {
+      const res = await fetch(`/api/invitations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: action }),
       });
 
-      // Update UI state
-      setReceivedList((prev) =>
-        prev.map((inv) => (inv.id === id ? { ...inv, status: action } : inv))
-      );
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Update UI state only on confirmed success
+        setReceivedList((prev) =>
+          prev.map((inv) => (inv.id === id ? { ...inv, status: action } : inv))
+        );
+        console.log(`[Invitations] Successfully ${action} invitation:`, id);
+      } else {
+        console.error(`[Invitations] Failed to ${action} invitation:`, data.error);
+        alert(`Failed to ${action} invitation: ${data.error || 'Unknown error'}`);
+      }
     } catch (err) {
       console.error(`Error updating invitation to ${action}:`, err);
+      alert(`Network error while updating invitation. Please try again.`);
     } finally {
       setActionLoading((prev) => ({ ...prev, [id]: false }));
     }
@@ -215,6 +172,9 @@ export default function InvitationsPage() {
             }))
           );
         }
+      } else {
+        // Show error to user (e.g., recipient not registered)
+        alert(data.error || 'Failed to send invitation. Please try again.');
       }
     } catch (err) {
       console.error('Error sending direct invite:', err);

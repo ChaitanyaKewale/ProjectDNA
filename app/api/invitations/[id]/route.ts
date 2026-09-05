@@ -21,6 +21,8 @@ export async function PATCH(
     const body = await req.json();
     const { status } = body;
 
+    console.log('[PATCH /api/invitations] invitationId:', id, 'status:', status, 'clerkId:', clerkId);
+
     if (!status || (status !== 'accepted' && status !== 'rejected')) {
       return NextResponse.json(
         { error: 'Invalid status. Must be accepted or rejected.' },
@@ -44,35 +46,56 @@ export async function PATCH(
           });
         }
       } catch (err) {
-        console.warn('Could not sync user in PATCH:', err);
+        console.warn('[PATCH] Could not sync user:', err);
       }
     }
 
+    console.log('[PATCH] dbUser resolved:', dbUser?.id, dbUser?.email);
+
+    // Update the invitation status in DB
     const updatedInvite = await updateInvitationStatus(id, status);
-    const targetProjectId = updatedInvite?.projectId || 'demo-1';
+
+    if (!updatedInvite) {
+      console.error('[PATCH] updateInvitationStatus returned undefined for id:', id);
+      return NextResponse.json(
+        { error: 'Invitation not found or could not be updated' },
+        { status: 404 }
+      );
+    }
+
+    console.log('[PATCH] Invitation updated:', updatedInvite.id, 'projectId:', updatedInvite.projectId, 'status:', updatedInvite.status);
 
     // If accepted, add to project_members table as 'member'
     if (status === 'accepted') {
-      const memberUserId = dbUser?.id; // Real DB UUID!
-      if (memberUserId && isUUID(memberUserId) && isUUID(targetProjectId)) {
+      const memberUserId = dbUser?.id;
+      const targetProjectId = updatedInvite.projectId;
+
+      console.log('[PATCH] Attempting addMember - userId:', memberUserId, 'projectId:', targetProjectId);
+      console.log('[PATCH] userId isUUID:', memberUserId ? isUUID(memberUserId) : 'null', 'projectId isUUID:', targetProjectId ? isUUID(targetProjectId) : 'null');
+
+      if (memberUserId && isUUID(memberUserId) && targetProjectId && isUUID(targetProjectId)) {
         try {
-          await addMember({
+          const memberResult = await addMember({
             projectId: targetProjectId,
             userId: memberUserId,
             role: 'member',
           });
+          console.log('[PATCH] addMember succeeded:', memberResult.id);
         } catch (memberErr) {
-          console.warn('Member insertion notice:', memberErr);
+          console.error('[PATCH] addMember FAILED:', memberErr);
+          // Don't fail the whole response — invitation is already accepted
         }
+      } else {
+        console.error('[PATCH] Cannot add member - invalid IDs. userId:', memberUserId, 'projectId:', targetProjectId);
       }
     }
 
     return NextResponse.json({
       success: true,
-      invitation: updatedInvite || { id, status, projectId: targetProjectId },
+      invitation: updatedInvite,
     });
   } catch (error: any) {
-    console.error('Error updating invitation status:', error);
+    console.error('[PATCH] Error updating invitation status:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to update invitation' },
       { status: 500 }
