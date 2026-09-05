@@ -20,9 +20,13 @@ export default async function WorkspaceLayout({
     { href: `/workspace/${projectId}`, label: 'Overview', icon: '📊' },
     { href: `/workspace/${projectId}/team`, label: 'Team Members', icon: '👥' },
     { href: `/workspace/${projectId}/tasks`, label: 'Tasks (Kanban)', icon: '📋' },
+    { href: `/workspace/${projectId}/gap-analysis`, label: 'AI Gap Analysis', icon: '🔍' },
+    { href: `/workspace/${projectId}/health`, label: 'AI Team Health', icon: '⚡' },
     { href: `/workspace/${projectId}/dna`, label: 'DNA Settings', icon: '🧬' },
     { href: `/workspace/${projectId}/progress`, label: 'Progress & Goals', icon: '🎯' },
     { href: `/workspace/${projectId}/resources`, label: 'Shared Resources', icon: '📚' },
+    { href: `/workspace/${projectId}/github`, label: 'GitHub Sync', icon: '🐙' },
+    { href: `/workspace/${projectId}/chat`, label: 'Team Chat & AI', icon: '💬' },
   ];
 
   return (
