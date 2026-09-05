@@ -370,19 +370,26 @@ export default function CreateProjectPage() {
                   </h4>
                   <div className={styles.rolesGrid}>
                     {aiResult.requiredRoles?.map((r: any, idx: number) => (
-                      <div key={idx} className={r.roleTitle ? styles.roleCard : ''} style={{ background: 'rgba(255,255,255,0.03)', padding: '0.875rem', borderRadius: '8px' }}>
+                      <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                         <div style={{ fontWeight: 700, color: 'var(--color-accent-cyan)', fontSize: '0.875rem' }}>
                           {r.role || 'Developer'} ({r.count || 1})
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                          Skills: {r.skillsRequired?.join(', ') || 'Core Stack'}
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
+                          Skills: {Array.isArray(r.skillsRequired) ? r.skillsRequired.join(', ') : 'Core Stack'}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Click below to generate Project DNA using Gemini AI:</p>
+                <Button variant="primary" onClick={runAiAnalysis} loading={isAnalyzing}>
+                  Analyze with AI ✨
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
