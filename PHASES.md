@@ -224,16 +224,16 @@
 
 ---
 
-## Phase 10 — Invitations
+## Phase 10 — Invitations ✅ (Complete)
 > **Goal**: Full send/receive/accept/reject flow.
 
-- [ ] `app/api/invitations/route.ts` — POST (create), GET (list)
-- [ ] `app/api/invitations/[id]/route.ts` — PATCH (accept/reject)
-- [ ] `app/invitations/page.tsx`:
+- [x] `app/api/invitations/route.ts` — POST (create), GET (list)
+- [x] `app/api/invitations/[id]/route.ts` — PATCH (accept/reject)
+- [x] `app/invitations/page.tsx`:
   - Received tab: project info, sender, match %, accept/reject
   - Sent tab: outgoing with status badge
-- [ ] On accept: insert row into `project_members` (role = member)
-- [ ] Navbar notification dot for pending invitations
+- [x] On accept: insert row into `project_members` (role = member)
+- [x] Navbar link & notification badge for pending invitations
 
 **Done when**: Full invite flow works end-to-end.
 

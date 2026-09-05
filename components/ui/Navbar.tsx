@@ -9,6 +9,7 @@ import styles from "./Navbar.module.css";
 const navLinks = [
   { href: "/explore",    label: "Explore" },
   { href: "/dashboard",  label: "Dashboard" },
+  { href: "/invitations", label: "Invitations ✉️" },
   { href: "/create-project", label: "Create Project" },
 ];
 

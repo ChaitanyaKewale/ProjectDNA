@@ -1,0 +1,317 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import styles from './invitations.module.css';
+import Button from '@/components/ui/Button';
+
+interface InvitationItem {
+  id: string;
+  projectId: string;
+  projectTitle: string;
+  projectCategory?: string;
+  senderName: string;
+  senderAvatar?: string | null;
+  recipientName?: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  matchScore: number;
+  message: string;
+  createdAt: string;
+}
+
+const FALLBACK_RECEIVED: InvitationItem[] = [
+  {
+    id: 'inv-rec-1',
+    projectId: 'demo-1',
+    projectTitle: 'AI Developer Matching Platform',
+    projectCategory: 'Developer Tools & AI',
+    senderName: 'Chaitanya Kewale (Project Owner)',
+    status: 'pending',
+    matchScore: 96,
+    message: 'Hey! Your profile on ProjectDNA matches our AI ML Architect requirements with a 96% score. We would love to have you join our project team!',
+    createdAt: '2 hours ago',
+  },
+  {
+    id: 'inv-rec-2',
+    projectId: 'demo-2',
+    projectTitle: 'DeFi Liquidity Aggregator',
+    projectCategory: 'Blockchain / Fintech',
+    senderName: 'Alex Morgan',
+    status: 'pending',
+    matchScore: 88,
+    message: 'Looking for a Senior Systems & Backend Specialist with PostgreSQL & Node.js expertise to help architect our high-throughput DEX liquidity engine.',
+    createdAt: '1 day ago',
+  },
+];
+
+const FALLBACK_SENT: InvitationItem[] = [
+  {
+    id: 'inv-sent-1',
+    projectId: 'demo-1',
+    projectTitle: 'AI Developer Matching Platform',
+    projectCategory: 'Developer Tools & AI',
+    senderName: 'You',
+    recipientName: 'Elena Rostova (AI ML Architect)',
+    status: 'pending',
+    matchScore: 96,
+    message: 'Invitation to collaborate as AI / ML Architect.',
+    createdAt: '3 hours ago',
+  },
+  {
+    id: 'inv-sent-2',
+    projectId: 'demo-1',
+    projectTitle: 'AI Developer Matching Platform',
+    projectCategory: 'Developer Tools & AI',
+    senderName: 'You',
+    recipientName: 'Marcus Vance (Fullstack Next.js Specialist)',
+    status: 'accepted',
+    matchScore: 91,
+    message: 'Invitation to collaborate as Fullstack Next.js Specialist.',
+    createdAt: '2 days ago',
+  },
+];
+
+export default function InvitationsPage() {
+  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+  const [receivedList, setReceivedList] = useState<InvitationItem[]>(FALLBACK_RECEIVED);
+  const [sentList, setSentList] = useState<InvitationItem[]>(FALLBACK_SENT);
+  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    async function fetchInvitations() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/invitations');
+        const data = await res.json();
+        if (data.success) {
+          if (data.received && data.received.length > 0) {
+            const mappedReceived: InvitationItem[] = data.received.map((item: any) => ({
+              id: item.id,
+              projectId: item.projectId || 'demo-1',
+              projectTitle: item.projectTitle || 'Project Collaboration',
+              projectCategory: item.projectCategory || 'General',
+              senderName: item.senderName || 'Project Lead',
+              status: item.status || 'pending',
+              matchScore: item.matchScore || 90,
+              message: item.message || 'Invited to join project',
+              createdAt: new Date(item.createdAt).toLocaleDateString(),
+            }));
+            setReceivedList(mappedReceived);
+          }
+
+          if (data.sent && data.sent.length > 0) {
+            const mappedSent: InvitationItem[] = data.sent.map((item: any) => ({
+              id: item.id,
+              projectId: item.projectId || 'demo-1',
+              projectTitle: item.projectTitle || 'Project Collaboration',
+              projectCategory: item.projectCategory || 'General',
+              senderName: 'You',
+              recipientName: item.recipientName || 'Developer Candidate',
+              status: item.status || 'pending',
+              matchScore: item.matchScore || 90,
+              message: item.message || 'Invitation sent',
+              createdAt: new Date(item.createdAt).toLocaleDateString(),
+            }));
+            setSentList(mappedSent);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch invitations:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchInvitations();
+  }, []);
+
+  const handleRespond = async (id: string, action: 'accepted' | 'rejected') => {
+    setActionLoading((prev) => ({ ...prev, [id]: true }));
+    try {
+      await fetch(`/api/invitations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: action }),
+      });
+
+      // Update UI state
+      setReceivedList((prev) =>
+        prev.map((inv) => (inv.id === id ? { ...inv, status: action } : inv))
+      );
+    } catch (err) {
+      console.error(`Error updating invitation to ${action}:`, err);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const pendingReceivedCount = receivedList.filter((i) => i.status === 'pending').length;
+
+  return (
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>Team Invitations</h1>
+        <p className={styles.subtitle}>
+          Manage your incoming project collaboration invitations and track outgoing developer requests.
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tabBtn} ${activeTab === 'received' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('received')}
+        >
+          <span>Received Invitations</span>
+          {pendingReceivedCount > 0 && <span className={styles.badge}>{pendingReceivedCount}</span>}
+        </button>
+
+        <button
+          className={`${styles.tabBtn} ${activeTab === 'sent' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('sent')}
+        >
+          <span>Sent Invitations</span>
+          <span className={styles.badge} style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}>
+            {sentList.length}
+          </span>
+        </button>
+      </div>
+
+      {/* Received Tab Content */}
+      {activeTab === 'received' && (
+        <div className={styles.inviteGrid}>
+          {receivedList.length === 0 ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>📬</div>
+              <p className={styles.emptyText}>You don&apos;t have any project invitations yet.</p>
+              <Link href="/explore">
+                <Button variant="primary">Explore Open Projects →</Button>
+              </Link>
+            </div>
+          ) : (
+            receivedList.map((inv) => (
+              <div key={inv.id} className={styles.inviteCard}>
+                <div className={styles.cardHeader}>
+                  <div>
+                    <h3 className={styles.projectTitle}>{inv.projectTitle}</h3>
+                    <div className={styles.projectCategory}>{inv.projectCategory}</div>
+                  </div>
+
+                  <div className={styles.matchPill}>
+                    <span>✨</span> {inv.matchScore}% DNA Match
+                  </div>
+                </div>
+
+                <div className={styles.messageBox}>{inv.message}</div>
+
+                <div className={styles.cardFooter}>
+                  <div className={styles.senderInfo}>
+                    <div className={styles.avatar}>{inv.senderName[0].toUpperCase()}</div>
+                    <div>
+                      <div className={styles.senderName}>{inv.senderName}</div>
+                      <div className={styles.senderRole}>Sent {inv.createdAt}</div>
+                    </div>
+                  </div>
+
+                  <div className={styles.actions}>
+                    {inv.status === 'pending' ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={actionLoading[inv.id]}
+                          onClick={() => handleRespond(inv.id, 'rejected')}
+                          style={{ color: '#f87171' }}
+                        >
+                          Decline
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          disabled={actionLoading[inv.id]}
+                          onClick={() => handleRespond(inv.id, 'accepted')}
+                        >
+                          Accept & Join Team ✨
+                        </Button>
+                      </>
+                    ) : inv.status === 'accepted' ? (
+                      <span className={`${styles.statusPill} ${styles.statusAccepted}`}>
+                        ✓ Joined Team
+                      </span>
+                    ) : (
+                      <span className={`${styles.statusPill} ${styles.statusRejected}`}>
+                        ✕ Invitation Declined
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Sent Tab Content */}
+      {activeTab === 'sent' && (
+        <div className={styles.inviteGrid}>
+          {sentList.length === 0 ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>📤</div>
+              <p className={styles.emptyText}>You haven&apos;t sent any invitations to candidates yet.</p>
+              <Link href="/dashboard">
+                <Button variant="primary">Go to Dashboard →</Button>
+              </Link>
+            </div>
+          ) : (
+            sentList.map((inv) => (
+              <div key={inv.id} className={styles.inviteCard}>
+                <div className={styles.cardHeader}>
+                  <div>
+                    <h3 className={styles.projectTitle}>{inv.projectTitle}</h3>
+                    <div className={styles.projectCategory}>Recipient: {inv.recipientName || 'Candidate'}</div>
+                  </div>
+
+                  <div className={styles.matchPill}>
+                    <span>✨</span> {inv.matchScore}% Match
+                  </div>
+                </div>
+
+                <div className={styles.messageBox}>{inv.message}</div>
+
+                <div className={styles.cardFooter}>
+                  <div className={styles.senderInfo}>
+                    <div className={styles.avatar}>Y</div>
+                    <div>
+                      <div className={styles.senderName}>Sent by You</div>
+                      <div className={styles.senderRole}>Created {inv.createdAt}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    {inv.status === 'pending' && (
+                      <span className={`${styles.statusPill} ${styles.statusPending}`}>
+                        ⏳ Pending Response
+                      </span>
+                    )}
+                    {inv.status === 'accepted' && (
+                      <span className={`${styles.statusPill} ${styles.statusAccepted}`}>
+                        ✓ Accepted & Joined
+                      </span>
+                    )}
+                    {inv.status === 'rejected' && (
+                      <span className={`${styles.statusPill} ${styles.statusRejected}`}>
+                        ✕ Declined
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
