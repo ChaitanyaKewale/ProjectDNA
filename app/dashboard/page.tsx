@@ -140,7 +140,7 @@ export default async function DashboardPage() {
 
             {pendingInvitations.length > 0 ? (
               <div className={styles.cardsGrid}>
-                {pendingInvitations.map((invite) => (
+                {pendingInvitations.map((invite: any) => (
                   <div key={invite.id} className={styles.inviteCard}>
                     <div className={styles.inviteHeader}>
                       <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>

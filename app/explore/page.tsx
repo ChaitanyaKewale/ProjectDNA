@@ -106,6 +106,42 @@ export default function ExploreProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    async function fetchDbProjects() {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        if (data.success && data.projects && data.projects.length > 0) {
+          const mappedDbProjects: ProjectCardData[] = data.projects.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug || p.id,
+            description: p.description,
+            category: p.category || 'Fullstack',
+            teamSize: p.teamSize || 4,
+            membersCount: 1,
+            techPreferences: Array.isArray(p.techPreferences) ? p.techPreferences : ['TypeScript', 'React'],
+            duration: p.duration || '4 Weeks',
+            visibility: p.visibility || 'public',
+          }));
+
+          // Avoid duplicates by filtering out items already matching demo IDs
+          setProjects((prev) => {
+            const existingIds = new Set(mappedDbProjects.map((dp) => dp.id));
+            const filteredDemo = DEMO_PROJECTS.filter((dp) => !existingIds.has(dp.id));
+            return [...mappedDbProjects, ...filteredDemo];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch DB projects:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchDbProjects();
+  }, []);
+
   const categories = ['All', 'AI / ML', 'Fullstack', 'Frontend', 'Web3 / P2P', 'DevOps', 'Mobile'];
 
   // Filter projects by search query and selected category

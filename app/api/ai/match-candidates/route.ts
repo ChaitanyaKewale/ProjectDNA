@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getProjectById, getProjectBySlug, getProjectDna } from '@/lib/db/queries/projects';
+import { getAllUsers } from '@/lib/db/queries/users';
 
 interface CandidateMatchResult {
   id: string;
@@ -129,8 +130,27 @@ export async function POST(req: Request) {
       ? (projectDna.requiredSkills as string[])
       : ['TypeScript', 'Next.js', 'PostgreSQL', 'Gemini API'];
 
+    // Combine static candidate pool with real registered database users
+    const dbUsers = await getAllUsers();
+    const realUserCandidates = dbUsers
+      .filter((u) => u.clerkId !== userId) // exclude current requester
+      .map((u, idx) => ({
+        id: u.id,
+        userId: u.id,
+        name: u.name || 'Developer',
+        username: u.username || 'developer',
+        avatarUrl: u.avatarUrl,
+        role: idx % 2 === 0 ? 'Fullstack Next.js Specialist' : 'Backend & Systems Engineer',
+        experience: 'Intermediate (3 yrs)',
+        skills: ['TypeScript', 'Next.js', 'React', 'Node.js', 'PostgreSQL'],
+        hoursPerWeek: 20,
+        availabilityStatus: 'available',
+      }));
+
+    const fullPool = [...realUserCandidates, ...CANDIDATE_POOL];
+
     // Match algorithm calculation per candidate
-    const rankedCandidates: CandidateMatchResult[] = CANDIDATE_POOL.map((cand) => {
+    const rankedCandidates: CandidateMatchResult[] = fullPool.map((cand) => {
       // 1. Skills match (40%)
       const matchingSkills = cand.skills.filter((s) =>
         requiredSkills.some((reqSkill) => reqSkill.toLowerCase() === s.toLowerCase())

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getUserByClerkId } from '@/lib/db/queries/users';
-import { createInvitation, getUserInvitations } from '@/lib/db/queries/invitations';
+import { createInvitation, getDetailedUserInvitations } from '@/lib/db/queries/invitations';
 
 export async function POST(req: Request) {
   try {
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     const dbUser = await getUserByClerkId(clerkId);
     const userId = dbUser?.id || clerkId;
 
-    const allInvites = await getUserInvitations(userId);
+    const allInvites = await getDetailedUserInvitations(userId);
 
     const received = allInvites.filter((inv) => inv.toUserId === userId || inv.toUserId === clerkId);
     const sent = allInvites.filter((inv) => inv.fromUserId === userId || inv.fromUserId === clerkId);

@@ -98,6 +98,8 @@ export default function InvitationsPage() {
               createdAt: new Date(item.createdAt).toLocaleDateString(),
             }));
             setReceivedList(mappedReceived);
+          } else {
+            setReceivedList([]);
           }
 
           if (data.sent && data.sent.length > 0) {
@@ -114,6 +116,8 @@ export default function InvitationsPage() {
               createdAt: new Date(item.createdAt).toLocaleDateString(),
             }));
             setSentList(mappedSent);
+          } else {
+            setSentList([]);
           }
         }
       } catch (err) {

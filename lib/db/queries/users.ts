@@ -91,6 +91,16 @@ export async function completeUserOnboarding(userId: string): Promise<void> {
   }
 }
 
+export async function getAllUsers(): Promise<User[]> {
+  if (!process.env.DATABASE_URL) return [];
+  try {
+    return await db.select().from(users);
+  } catch (error) {
+    console.warn('[DB Notice]: Could not list users:', error);
+    return [];
+  }
+}
+
 export async function deleteUserByClerkId(clerkId: string): Promise<void> {
   if (!process.env.DATABASE_URL) return;
   try {
