@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
+import ExtensionErrorFilter from "@/components/ui/ExtensionErrorFilter";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,8 +31,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
-      <body>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <body suppressHydrationWarning>
+        <ExtensionErrorFilter />
         <ClerkProvider>
           <Navbar />
           <main style={{ paddingTop: "68px", minHeight: "100vh" }}>
