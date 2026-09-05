@@ -102,22 +102,21 @@
 
 ---
 
-## Phase 4 — Onboarding Wizard (5 Steps)
+## Phase 4 — Onboarding Wizard (5 Steps) ✅ (Complete)
 > **Goal**: After first sign-up, user is guided through profile setup before accessing the app.
 
-- [ ] Create `app/onboarding/page.tsx` — multi-step wizard shell with step indicator
-- [ ] **Step 1 — Basic Info**: name, username (auto-slug), college/org, bio
-- [ ] **Step 2 — Professional Info**: primary role, experience level, skills (tag input), tech stack, interests (checkboxes)
-- [ ] **Step 3 — Availability**: hours/week (slider), full-time/part-time toggle, current status
-- [ ] **Step 4 — Working Style** (5 card selectors):
+- [x] Create `app/onboarding/page.tsx` — multi-step wizard shell with step indicator
+- [x] **Step 1 — Basic Info**: name, username (auto-slug), college/org, bio
+- [x] **Step 2 — Professional Info**: primary role, experience level, skills (tag input), tech stack, interests (checkboxes)
+- [x] **Step 3 — Availability**: hours/week (slider), full-time/part-time toggle, current status
+- [x] **Step 4 — Working Style** (5 card selectors):
   - Work Timing: Morning 🌅 / Afternoon ☀️ / Night 🌙 / Flexible 🕐
   - Work Approach: Structured 📋 / Flexible 🌊
   - Work Pace: Fast-paced ⚡ / Balanced ⚖️ / Detail-oriented 🔍
   - Communication: Daily 💬 / Weekly 📅 / Async 📨
   - Team Role: Leader 👑 / Collaborative 🤝 / Independent 🧑‍💻
-- [ ] **Step 5 — Preview**: public profile preview + "Finish & Launch" button
-- [ ] `app/api/onboarding/route.ts` — POST: save profile + working style, set `onboardingComplete = true`
-- [ ] Middleware redirect: `onboardingComplete = false` → `/onboarding`
+- [x] **Step 5 — Preview**: public profile preview + "Finish & Launch" button
+- [x] `app/api/onboarding/route.ts` — POST: save profile + working style, set `onboardingComplete = true`
 
 **Done when**: Full 5-step flow saves to DB and redirects to dashboard.
 
@@ -296,8 +295,8 @@ GEMINI_API_KEY=...         # from aistudio.google.com
 | 1 | Design System + UI Components | ✅ Done |
 | 2 | Database Schema + Drizzle | ✅ Done |
 | 3 | Clerk Webhook → User Sync | ✅ Done |
-| 4 | Onboarding Wizard (5 Steps) | ⬜ Next |
-| 5 | Public Pages (Landing, Explore, Profile) | ⬜ |
+| 4 | Onboarding Wizard (5 Steps) | ✅ Done |
+| 5 | Public Pages (Landing, Explore, Profile) | ⬜ Next |
 | 6 | Authenticated Dashboard | ⬜ |
 | 7 | Project Creation + AI Analyzer | ⬜ |
 | 8 | Project DNA Dashboard | ⬜ |
