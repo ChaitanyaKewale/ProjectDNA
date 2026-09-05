@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ExtensionErrorFilter />
         <ClerkProvider>
           <Navbar />
-          <main style={{ paddingTop: "68px", minHeight: "100vh" }}>
+          <main suppressHydrationWarning style={{ paddingTop: "68px", minHeight: "100vh" }}>
             {children}
           </main>
         </ClerkProvider>
