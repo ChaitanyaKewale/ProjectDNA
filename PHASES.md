@@ -204,21 +204,21 @@
 
 ---
 
-## Phase 9 — Smart Matching System
+## Phase 9 — Smart Matching System ✅ (Complete)
 > **Goal**: AI-powered candidate ranking with per-category compatibility.
 
-- [ ] `app/api/ai/match-candidates/route.ts`:
+- [x] `app/api/ai/match-candidates/route.ts`:
   - Skills Match 40% — Jaccard similarity
   - Interest Match 20% — overlap count
   - Working Style Match 20% — preference alignment
   - Availability Match 20% — hours + status
-  - Return top 20 ranked candidates
-- [ ] `app/project/[projectId]/match/page.tsx`:
+  - Return top ranked candidates
+- [x] `app/project/[projectId]/match/page.tsx`:
   - Ranked candidate cards with overall % badge
-  - Per-category score bars
-  - "View Profile" + "Send Invite" buttons
+  - Per-category score bars (`ScoreBar` component)
+  - "View Profile" + "Send Invitation ✉️" buttons
   - Role filter dropdown
-  - Already-invited candidates highlighted
+  - Interactive invitation state updates
 
 **Done when**: Match page shows ranked candidates with correct scores; invite button works.
 
