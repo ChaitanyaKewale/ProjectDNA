@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { getUserByClerkId } from '@/lib/db/queries/users';
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { getUserByClerkId, upsertUser } from '@/lib/db/queries/users';
 import { updateInvitationStatus } from '@/lib/db/queries/invitations';
 import { addMember } from '@/lib/db/queries/members';
+
+const isUUID = (str: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
 
 export async function PATCH(
   req: Request,
@@ -25,27 +28,48 @@ export async function PATCH(
       );
     }
 
-    const dbUser = await getUserByClerkId(clerkId);
-    const userId = dbUser?.id || clerkId;
+    // Ensure dbUser exists in Neon DB
+    let dbUser = await getUserByClerkId(clerkId);
+    if (!dbUser) {
+      try {
+        const clerkUser = await currentUser();
+        if (clerkUser) {
+          dbUser = await upsertUser({
+            clerkId,
+            email: clerkUser.emailAddresses[0]?.emailAddress || `${clerkId}@clerk.user`,
+            name: clerkUser.fullName || 'Developer',
+            username: clerkUser.username || `user_${clerkId.slice(-8)}`,
+            avatarUrl: clerkUser.imageUrl || null,
+            onboardingComplete: false,
+          });
+        }
+      } catch (err) {
+        console.warn('Could not sync user in PATCH:', err);
+      }
+    }
 
     const updatedInvite = await updateInvitationStatus(id, status);
+    const targetProjectId = updatedInvite?.projectId || 'demo-1';
 
     // If accepted, add to project_members table as 'member'
-    if (status === 'accepted' && updatedInvite?.projectId) {
-      try {
-        await addMember({
-          projectId: updatedInvite.projectId,
-          userId: userId,
-          role: 'member',
-        });
-      } catch (memberErr) {
-        console.warn('Member insertion notice:', memberErr);
+    if (status === 'accepted') {
+      const memberUserId = dbUser?.id; // Real DB UUID!
+      if (memberUserId && isUUID(memberUserId) && isUUID(targetProjectId)) {
+        try {
+          await addMember({
+            projectId: targetProjectId,
+            userId: memberUserId,
+            role: 'member',
+          });
+        } catch (memberErr) {
+          console.warn('Member insertion notice:', memberErr);
+        }
       }
     }
 
     return NextResponse.json({
       success: true,
-      invitation: updatedInvite || { id, status },
+      invitation: updatedInvite || { id, status, projectId: targetProjectId },
     });
   } catch (error: any) {
     console.error('Error updating invitation status:', error);

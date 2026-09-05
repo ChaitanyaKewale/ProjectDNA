@@ -142,6 +142,21 @@ export async function updateInvitationStatus(
   status: 'accepted' | 'rejected'
 ): Promise<Invitation | undefined> {
   if (!process.env.DATABASE_URL) return undefined;
+
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+  if (!isUUID) {
+    return {
+      id,
+      fromUserId: 'mock-from',
+      toUserId: 'mock-to',
+      projectId: 'demo-1',
+      status,
+      matchScore: 90,
+      message: 'Invitation',
+      createdAt: new Date(),
+    };
+  }
+
   try {
     const [updated] = await db
       .update(invitations)

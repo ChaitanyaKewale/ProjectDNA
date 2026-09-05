@@ -374,9 +374,11 @@ export default function InvitationsPage() {
                         </Button>
                       </>
                     ) : inv.status === 'accepted' ? (
-                      <span className={`${styles.statusPill} ${styles.statusAccepted}`}>
-                        ✓ Joined Team
-                      </span>
+                      <Link href={`/workspace/${inv.projectId}`}>
+                        <Button variant="primary" size="sm">
+                          ✓ Joined — Open Workspace →
+                        </Button>
+                      </Link>
                     ) : (
                       <span className={`${styles.statusPill} ${styles.statusRejected}`}>
                         ✕ Invitation Declined
