@@ -150,17 +150,111 @@ export default function InvitationsPage() {
     }
   };
 
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [sendingDirect, setSendingDirect] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+
+  const handleDirectInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setSendingDirect(true);
+    try {
+      const res = await fetch('/api/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: 'demo-1',
+          toEmail: inviteEmail.trim(),
+          message: 'Invitation to collaborate on project team on ProjectDNA.',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSendSuccess(true);
+        setTimeout(() => {
+          setSendSuccess(false);
+          setShowInviteModal(false);
+          setInviteEmail('');
+        }, 2000);
+
+        // Refresh sent invitations list
+        const updatedRes = await fetch('/api/invitations');
+        const updatedData = await updatedRes.json();
+        if (updatedData.sent) {
+          setSentList(
+            updatedData.sent.map((item: any) => ({
+              id: item.id,
+              projectId: item.projectId || 'demo-1',
+              projectTitle: item.projectTitle || 'Project Collaboration',
+              projectCategory: item.projectCategory || 'General',
+              senderName: 'You',
+              recipientName: item.recipientName || inviteEmail,
+              status: item.status || 'pending',
+              matchScore: item.matchScore || 90,
+              message: item.message || 'Invitation sent',
+              createdAt: new Date(item.createdAt).toLocaleDateString(),
+            }))
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Error sending direct invite:', err);
+    } finally {
+      setSendingDirect(false);
+    }
+  };
+
   const pendingReceivedCount = receivedList.filter((i) => i.status === 'pending').length;
 
   return (
     <div className={styles.container}>
       {/* Header */}
-      <div className={styles.header}>
-        <h1 className={styles.title}>Team Invitations</h1>
-        <p className={styles.subtitle}>
-          Manage your incoming project collaboration invitations and track outgoing developer requests.
-        </p>
+      <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 className={styles.title}>Team Invitations</h1>
+          <p className={styles.subtitle}>
+            Manage your incoming project collaboration invitations and track outgoing developer requests.
+          </p>
+        </div>
+
+        <Button variant="primary" onClick={() => setShowInviteModal(!showInviteModal)}>
+          + Invite Developer by Email ✉️
+        </Button>
       </div>
+
+      {/* Direct Invite Modal */}
+      {showInviteModal && (
+        <form onSubmit={handleDirectInvite} className={styles.inviteCard} style={{ marginBottom: '2rem', borderColor: 'var(--color-electric-violet)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.125rem', fontWeight: 600, color: '#fff' }}>
+              Send Direct Invitation to Developer
+            </h3>
+            {sendSuccess && <span style={{ color: '#10b981', fontWeight: 600, fontSize: '0.875rem' }}>Invitation Sent Successfully ✓</span>}
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
+            <input
+              type="email"
+              placeholder="Enter developer's email address (e.g. developer@example.com)..."
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              style={{
+                flex: 1,
+                background: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '0.75rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                color: '#fff',
+              }}
+              required
+            />
+            <Button type="submit" variant="primary" disabled={sendingDirect}>
+              {sendingDirect ? 'Sending...' : 'Send Invite ✉️'}
+            </Button>
+          </div>
+        </form>
+      )}
 
       {/* Tabs */}
       <div className={styles.tabs}>
